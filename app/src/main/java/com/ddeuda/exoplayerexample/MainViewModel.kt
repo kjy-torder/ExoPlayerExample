@@ -4,28 +4,13 @@ import android.content.Context
 import android.net.Uri
 import android.util.Log
 import android.view.View
-import androidx.lifecycle.LiveData
-import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
-import com.google.android.exoplayer2.DefaultRenderersFactory
 import com.google.android.exoplayer2.ExoPlayer
 import com.google.android.exoplayer2.MediaItem
-import com.google.android.exoplayer2.database.ExoDatabaseProvider
-import com.google.android.exoplayer2.database.StandaloneDatabaseProvider
-import com.google.android.exoplayer2.offline.DownloadHelper
 import com.google.android.exoplayer2.offline.DownloadRequest
 import com.google.android.exoplayer2.offline.DownloadService
-import com.google.android.exoplayer2.source.DefaultMediaSourceFactory
-import com.google.android.exoplayer2.source.MediaSource
 import com.google.android.exoplayer2.source.ProgressiveMediaSource
-import com.google.android.exoplayer2.upstream.DefaultDataSourceFactory
-import com.google.android.exoplayer2.upstream.DefaultHttpDataSource
-import com.google.android.exoplayer2.upstream.cache.CacheDataSource
-import com.google.android.exoplayer2.upstream.cache.LeastRecentlyUsedCacheEvictor
-import com.google.android.exoplayer2.upstream.cache.NoOpCacheEvictor
-import com.google.android.exoplayer2.upstream.cache.SimpleCache
 import java.io.File
-import java.net.URI
 
 class MainViewModel : ViewModel() {
     companion object {
@@ -56,9 +41,15 @@ class MainViewModel : ViewModel() {
 
 //            DownloadService.start(context, MediaDownloadService::class.java)
 //            DownloadService.startForeground(context, MediaDownloadService::class.java)
-//            DownloadService.sendAddDownload(context, MediaDownloadService::class.java, request, false)
 
-            val cacheSourceFactory = Cache(context)
+            DownloadService.sendAddDownload(
+                context,
+                MediaDownloadService::class.java,
+                request,
+                false
+            )
+
+            val cacheSourceFactory = CacheDataSourceFactory(context)
             val mediaItem = MediaItem.fromUri(Uri.parse(source))
             val factory = ProgressiveMediaSource.Factory(cacheSourceFactory.cacheDataSourceFactory)
             val mediaSource = factory.createMediaSource(mediaItem)
@@ -69,7 +60,12 @@ class MainViewModel : ViewModel() {
     }
 
     fun showCacheDir(v: View) {
-        File("${v.context.cacheDir}/media/exo/4").listFiles().forEach {
+        File("${v.context.cacheDir}/media/exo").listFiles().forEach {
+            if (it.isDirectory) {
+                it.listFiles().forEach {
+                    Log.e(tag, "$it, ${it.length()}")
+                }
+            }
             Log.e(tag, "$it, ${it.length()}")
         }
 
