@@ -1,6 +1,8 @@
 package com.ddeuda.exoplayerexample
 
+import android.annotation.SuppressLint
 import android.app.Notification
+import android.app.NotificationManager.IMPORTANCE_HIGH
 import android.content.Context
 import com.google.android.exoplayer2.database.StandaloneDatabaseProvider
 import com.google.android.exoplayer2.offline.Download
@@ -28,38 +30,35 @@ class MediaDownloadService : DownloadService(
 
     override fun getDownloadManager(): DownloadManager {
         val databaseProvider = StandaloneDatabaseProvider(this)
-        val downloadCache = SimpleCache(
-            File(cacheDir, "media"),
-            NoOpCacheEvictor(),
-            databaseProvider
-        )
+        val downloadCache = Cache.cacheInstance(context = this)
 
         val dataSourceFactory = DefaultHttpDataSource.Factory()
         val downloadExecutor = Runnable::run
 
         val downloadNotificationHelper = DownloadNotificationHelper(
             this,
-            "h",
+            "sadasdasd",
         )
-
-        return DownloadManager(
+        val downloadManager = DownloadManager(
             this,
             databaseProvider,
             downloadCache,
             dataSourceFactory,
-            Executors.newFixedThreadPool(6)
-        ).apply {
-            addListener(
-                TerminalStateNotificationHelper(
-                    this@MediaDownloadService,
-                    downloadNotificationHelper,
-                    FOREGROUND_NOTIFICATION_ID + 1
-                )
+            downloadExecutor
+        )
+
+        downloadManager.addListener(
+            TerminalStateNotificationHelper(
+                this@MediaDownloadService,
+                downloadNotificationHelper,
+                FOREGROUND_NOTIFICATION_ID + 1
             )
-        }
+        )
+
+        return downloadManager
     }
 
-    override fun getScheduler(): Scheduler? {
+    override fun getScheduler(): Scheduler {
         return PlatformScheduler(this, JOB_ID)
     }
 
@@ -82,10 +81,12 @@ class MediaDownloadService : DownloadService(
 class TerminalStateNotificationHelper(
     private val context: Context,
     private val notificationHelper: DownloadNotificationHelper,
-    private val firstNotificationId: Int
+    firstNotificationId: Int
 ) : DownloadManager.Listener {
 
     private var nextNotificationId: Int = firstNotificationId
+
+    @SuppressLint("WrongConstant")
     override fun onDownloadChanged(
         downloadManager: DownloadManager,
         download: Download,
